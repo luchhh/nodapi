@@ -1,0 +1,27 @@
+{
+  "name": "nodapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luchhh/nodapi.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/luchhh/nodapi/issues"
+  },
+  "homepage": "https://github.com/luchhh/nodapi#readme",
+  "dependencies": {
+    "body": "^5.1.0",
+    "moment": "^2.22.2",
+    "mysql2": "^1.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.4"
+  }
+}
