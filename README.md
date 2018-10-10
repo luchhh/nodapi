@@ -18,7 +18,8 @@ Un ejercicio de API RESTful con NodeJS utilizando la menor cantidad posible de p
 3. Instalar la base de datos de ejemplo: `data_ejemplo.sql`
 4. Copiar el archivo `config.ejemplo.json` a `config.json`
 5. Modificar el archivo `config.json` con los datos de base de datos y URL de la aplicación correctos
-6. Acceder mediante la URL `http://localhost:8000/libros/`
+6. Desde el directorio nodapi ejecutar `npm update` para instalar las dependencias
+7. Acceder mediante la URL `http://localhost:8000/libros/`
 
 ## Uso de la API
 
