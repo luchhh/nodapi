@@ -35,9 +35,12 @@ ruteador.procesar = function(req, res){
         if(req.method == ruta.metodo && url.search(ruta.url)!=-1){
             console.log("URL visitada ",url," llamando al controlador ",ruta.controlador.name);
             ruta.controlador(req,res);
-            break;
+            return;
         }
     }
+    res.writeHead(405, {'Content-Type': 'application/json; charset=UTF-8'});
+    res.write(JSON.stringify({"msg":"Operación no permitada"}));
+    res.end();
 }
 
 module.exports = ruteador;
