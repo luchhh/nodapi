@@ -1,9 +1,9 @@
 controlador = require("./controller");
 
-console.log("inicializando ruteador");
+console.log("Inicializando ruteador");
 var ruteador = {};
 
-//aquí ir asociando URLs y Controllers
+//array que asocia rutas y controladores a ser llamados
 var rutas = [
     {   url: "^/libros($|/$|\\?|/\\?)", ///libros/
         metodo: "GET",
@@ -23,12 +23,17 @@ var rutas = [
     }
 ];
 
+/**
+ * @description llama al controlador correspondiente según la URL definida en Req.
+ * El controlador es invocado con los mismos objetos Request y Response del servidor
+ * HTTP.
+ * Se asume ya definida la asociación rutas/controladores en un array rutas.
+ */
 ruteador.procesar = function(req, res){
-    console.log("sobre la base de req llamar al controller adecuado");
     url = req.url;
     for (let ruta of rutas) {
-        console.log("URL visitada ",url," ruta evaluada ",ruta.url, "resultado de regex ",url.search(ruta.url));
         if(req.method == ruta.metodo && url.search(ruta.url)!=-1){
+            console.log("URL visitada ",url," llamando al controlador ",ruta.controlador.name);
             ruta.controlador(req,res);
             break;
         }

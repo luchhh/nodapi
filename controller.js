@@ -1,11 +1,17 @@
 const { URL } = require('url');
 const jsonBody = require("body/json")
+
+Paginador = require("./paginador");
 RepositorioLibros = require ("./models/repositorio_libros");
 
 var controller = {};
 
-controller.getLibroPorId = function(req, res){
-    console.log("Buscamos un libro");
+/**
+ * @description sobre la base del objeto request busca un libro por su ID
+ * y envía una respuesta al cliente
+ */
+controller.getLibroPorId = function getLibroPorId(req, res){
+    console.log("Buscando un libro");
     path = req.url.split('/');
     var id = (path[path.length-1].length > 0)? path[path.length-1] : path[path.length-2];
 
@@ -24,17 +30,22 @@ controller.getLibroPorId = function(req, res){
     });
 }
 
-controller.getLibros = function(req, res){
+/**
+ * @description sobre la base del objeto request busca varios libros según parámetros
+ * y envía una respuesta al cliente
+ */
+controller.getLibros = function getLibros(req, res){
     
-    console.log("Aqui buscamos el repositorio y devolvemos varios libros");
-    var url = new URL(req.url, "http://foo.com/");
-    config = {}; //objeto con los parámetros de búsqueda
+    console.log("Buscando el repositorio y devolviendo varios libros");
+    var url = new URL(req.url, "http://example.com/");
+    var config = {}; //objeto con los parámetros de búsqueda
     for(var par of url.searchParams.entries()) {
         config[par[0]] = par[1];
-     }
+    }
 
-     rl = new RepositorioLibros();
-     rl.buscar(config, function(error, libros){
+    rl = new RepositorioLibros();
+    
+    rl.buscar(config, function(error, libros){
         if (libros.length == 0) {
             res.writeHead(404, {'Content-Type': 'application/json; charset=UTF-8'});
             res.write(JSON.stringify({"msg":"Ningún libro encontrado "}));
@@ -51,16 +62,27 @@ controller.getLibros = function(req, res){
                 delete libro.descripcion;
                 delete libro.url;
             });
-            res.write(JSON.stringify({"data":{"libros":libros}}));
+            paginador = new Paginador(req)
+            rpta = {"data":
+                        {
+                            "libros":libros,
+                            "links": paginador.getLinks()
+                        }
+                    }
+            res.write(JSON.stringify(rpta));
             res.end();
         }
-     });
+    });
 }
 
-controller.addLibro = function(req, res){
+/**
+ * @description sobre la base del objeto request crea un nuevo libro según body
+ * y envía una respuesta al cliente
+ */
+controller.addLibro = function addLibro(req, res){
     console.log("Añadiendo un libro");
     jsonBody(req, res, function (jErr, body) {
-        // jErr is probably an invalid json error
+        // jErr es probablemente un error JSON
         if (jErr) {
             res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
             res.write(JSON.stringify({"msg":"Error en data. JSON mal formado"}));
@@ -89,9 +111,12 @@ controller.addLibro = function(req, res){
     });
 }
 
-controller.updateLibro = function(req, res){
-    //config = qs.parse(req.url);
-    console.log("Aqui actualizamos un libro");
+/**
+ * @description sobre la base del objeto request busca un libro y actualiza sus propiedades 
+ * según body. Luego envía una respuesta al cliente
+ */
+controller.updateLibro = function updateLibro(req, res){
+    console.log("Actualizando un libro");
     jsonBody(req, res, function (jErr, body) {
         if (jErr) {
             res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
