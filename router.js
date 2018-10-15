@@ -1,4 +1,6 @@
 controlador = require("./controller");
+//notar que más adelante no hace falta el operador NEW 
+//con controlador es un singleton
 
 console.log("Inicializando ruteador");
 var ruteador = {};

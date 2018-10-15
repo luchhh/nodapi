@@ -7,15 +7,15 @@ const moment = require('moment');
 var repositorioLibros = function() {
 
 //nombre de la tabla en BD
-var tabla = "libro";
-
+var _tabla = "libro";
+var $this = this; //una referencia al objeto RepositorioLibros para poder utilizarla dentro de funciones anidadas
 /** 
  * @description retorna el libro a partir de ID consultando la base de datos
  * @param {string} id
  * @param {function} callback con la firma (error, libro) donde libro
  * es el objeto encontrado en base de datos, NULL si no existe.
 */
-var getPorId = function(id, callback){
+$this.getPorId = function(id, callback){
     id = id.trim();
     const con = mysql.createConnection({
         host: global.gConfig.db.host,
@@ -24,7 +24,7 @@ var getPorId = function(id, callback){
         database: global.gConfig.db.nombre,
     });
 
-    var sql = "SELECT * FROM "+tabla+" WHERE id = ?";
+    var sql = "SELECT * FROM "+_tabla+" WHERE id = ?";
 
     rpta = con.execute(sql, [id],
         function(err, results, fields) {
@@ -41,7 +41,7 @@ var getPorId = function(id, callback){
                 config.creada = results[0].created;
                 config.modificada = results[0].modified;
                 config.id = id;
-                var nl=crearLibro(config);
+                var nl=$this.crearLibro(config);
                 if(nl){
                     callback(null, nl);
                 }else{
@@ -66,7 +66,7 @@ var getPorId = function(id, callback){
  * es un array de objetos libro encontrados en base de datos. Array vacío 
  * si ningún libro coincide
 */
-var buscar = function(config, callback){
+$this.buscar = function(config, callback){
     const con = mysql.createConnection({
         host: global.gConfig.db.host,
         user: global.gConfig.db.usuario,
@@ -75,7 +75,7 @@ var buscar = function(config, callback){
     });
 
     //construimos la consulta para buscar en base de datos según parámetros
-    var sql = "SELECT id, name, description, url FROM "+tabla+" WHERE 1";
+    var sql = "SELECT id, name, description, url FROM "+_tabla+" WHERE 1";
     var params = [];
     if(config.q){
         sql = sql + ' AND (name LIKE ? OR description LIKE ?)';
@@ -137,7 +137,7 @@ var buscar = function(config, callback){
                         config.creada = fila.created;
                         config.modificada = fila.modified;
                         config.id = fila.id;
-                        var nl=crearLibro(config);
+                        var nl=$this.crearLibro(config);
                         
                         if(nl){
                             libros.push(nl);
@@ -165,7 +165,7 @@ var buscar = function(config, callback){
  * crear el libro. Si es que la creación del libro falla se actualiza el último error registrado
  * en este repositorio
  */
-var crearLibro = function(config){
+$this.crearLibro = function(config){
 
     var error;
     //creamos un objeto libro a partir de la configuración pasada
@@ -182,7 +182,7 @@ var crearLibro = function(config){
 
     //si hubo algún error se actualiza el último error del repositorio
     if(error){
-        this.error = error; //this hace referencia a repositorioLibros
+        $this.error = error; //this hace referencia a repositorioLibros
         return null;
     }
 
@@ -200,14 +200,14 @@ var crearLibro = function(config){
             password: global.gConfig.db.password,
             database: global.gConfig.db.nombre,
         });
-        self = this;
+        self = this; //this hace rerefencia al libro
         var ahora = moment().format("YYYY-MM-DD HH:mm:ss");
-        this.creada = ahora;
-        var sql = "INSERT INTO "+tabla+" (id, name, description, url, created) VALUES (NULL,?,?,?,?)";
+        self.creada = ahora;
+        var sql = "INSERT INTO "+_tabla+" (id, name, description, url, created) VALUES (NULL,?,?,?,?)";
         
         rpta = con.execute(
             sql, 
-            [this.nombre, this.descripcion, this.url, this.creada], 
+            [self.nombre, self.descripcion, self.url, self.creada], 
             function(error, resultado){
                 //antes de llamar al callback asignamos a este libro
                 //el nuevo ID
@@ -242,14 +242,14 @@ var crearLibro = function(config){
             callback(error, null);
             return;
         }
-        //paso por referencia, self está apuntando al mismo objeto this
-        var self = this;
-        self = Object.assign(this,nConfig);        
+
+        //self es una copia de este libro + propiedades de nConfig
+        self = Object.assign(this,nConfig);
         var ahora = moment().format("YYYY-MM-DD HH:mm:ss");
-        this.modificada = ahora;
-        var sql = "UPDATE "+tabla+" SET name=?, description=?, url=?, modified=? WHERE id = ?";
+        self.modificada = ahora;
+        var sql = "UPDATE "+_tabla+" SET name=?, description=?, url=?, modified=? WHERE id = ?";
         
-        rpta = con.execute(sql, [this.nombre, this.descripcion, this.url, this.modificada, this.id], callback);
+        rpta = con.execute(sql, [self.nombre, self.descripcion, self.url, self.modificada, self.id], callback);
     }
 
     libro.eliminar = function(callback){
@@ -262,15 +262,8 @@ var crearLibro = function(config){
  * @description Retorna el último error registrado en este Repositorio de Libros
  * @returns {string} mensaje de error
  */
-var getUltimoError = function(){
-    return this.error;
-}
-
-return{
-    getPorId: getPorId,
-    buscar: buscar,
-    crearLibro: crearLibro,
-    getUltimoError: getUltimoError,    
+$this.getUltimoError = function(){
+    return $this.error;
 }
 
 };

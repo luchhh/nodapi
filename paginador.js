@@ -9,13 +9,13 @@ const { URL } = require('url');
 var paginador = function(req) {
 
 var iniVar = "ini"; //el nombre de la variable que tiene la página actual
-
+var $this = this;
     /**
      * @description Devuelve la URL modificada para ver la siguiente pagina
      * @returns {string} url
      * 
      */
-    function next(){
+    $this.next = function(){
         var url = new URL(req.url, "http://example.com/");
         var ini = 1; //número página por defecto
         var iniParam = url.searchParams.get(iniVar);
@@ -38,7 +38,7 @@ var iniVar = "ini"; //el nombre de la variable que tiene la página actual
      * @returns {string} url
      * 
      */
-    function prev(){
+    $this.prev = function(){
         var url = new URL(req.url, "http://example.com/");
         var ini = 1; //número página por defecto
         var iniParam = url.searchParams.get(iniVar);
@@ -68,10 +68,10 @@ var iniVar = "ini"; //el nombre de la variable que tiene la página actual
      * Si estamos en la página 1 entonces prev no se muestra
      * 
      */
-    function getLinks(){
+    $this.getLinks = function (){
         var links = [];
-        var next = this.next();
-        var prev = this.prev();
+        var next = $this.next();
+        var prev = $this.prev();
         links.push({
             rel: "self",
             href: req.url
@@ -89,12 +89,6 @@ var iniVar = "ini"; //el nombre de la variable que tiene la página actual
             });
         }
         return links;
-    }
-
-    return {
-        next: next,
-        prev: prev,
-        getLinks: getLinks
     }
 }
 
