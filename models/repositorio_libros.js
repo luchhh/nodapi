@@ -1,21 +1,25 @@
 const mysql = require("mysql2");
 const moment = require('moment');
 
+//nombre de la tabla en BD
+var _tabla = "libro";
+
 /**
  * @description Constructor de un Repositorio de Libros. 
  */
 var repositorioLibros = function() {
+    this.error = "";
+}
 
-//nombre de la tabla en BD
-var _tabla = "libro";
-var $this = this; //una referencia al objeto RepositorioLibros para poder utilizarla dentro de funciones anidadas
 /** 
  * @description retorna el libro a partir de ID consultando la base de datos
  * @param {string} id
  * @param {function} callback con la firma (error, libro) donde libro
  * es el objeto encontrado en base de datos, NULL si no existe.
-*/
-$this.getPorId = function(id, callback){
+ */
+repositorioLibros.prototype.getPorId = function(id, callback){
+    //una referencia al objeto RepositorioLibros para poder utilizarla dentro de funciones anidadas
+    $this = this;
     id = id.trim();
     const con = mysql.createConnection({
         host: global.gConfig.db.host,
@@ -66,7 +70,10 @@ $this.getPorId = function(id, callback){
  * es un array de objetos libro encontrados en base de datos. Array vacío 
  * si ningún libro coincide
 */
-$this.buscar = function(config, callback){
+repositorioLibros.prototype.buscar = function(config, callback){
+    //una referencia al objeto RepositorioLibros para poder utilizarla dentro de funciones anidadas
+    $this = this;
+
     const con = mysql.createConnection({
         host: global.gConfig.db.host,
         user: global.gConfig.db.usuario,
@@ -165,7 +172,9 @@ $this.buscar = function(config, callback){
  * crear el libro. Si es que la creación del libro falla se actualiza el último error registrado
  * en este repositorio
  */
-$this.crearLibro = function(config){
+repositorioLibros.prototype.crearLibro = function(config){
+    //una referencia al objeto RepositorioLibros para poder utilizarla dentro de funciones anidadas
+    $this = this;
 
     var error;
     //creamos un objeto libro a partir de la configuración pasada
@@ -262,10 +271,8 @@ $this.crearLibro = function(config){
  * @description Retorna el último error registrado en este Repositorio de Libros
  * @returns {string} mensaje de error
  */
-$this.getUltimoError = function(){
-    return $this.error;
+repositorioLibros.prototype.getUltimoError = function(){
+    return this.error;
 }
-
-};
 
 module.exports = repositorioLibros;
