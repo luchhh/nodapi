@@ -5,6 +5,10 @@ global.gConfig = config;
 
 // Creamos el servidor
 var server = http.createServer(function (req, res) {
+  res.on('error', (err) => {
+    console.error("Error enviando respuesta: "+err);
+  });
+
   ruteador.procesar(req, res);
 });
 
