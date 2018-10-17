@@ -1,4 +1,4 @@
-const { URL } = require('url');
+const {URL} = require('url');
 
 var iniVar = "ini"; //el nombre de la variable que tiene la página actual
 
@@ -61,9 +61,9 @@ paginador.prototype.prev = function(){
  * @description Devuelve un objeto con la paginación según la convención HATEOAS
  * @returns {Object[]} Array 
  *      [
- *       0 => {rel: self, href: self}, 
- *       1 => {rel: next, href: next},  
- *       2 => {rel: prev, href: prev}
+ *       0 : {rel: self, href: self}, 
+ *       1 : {rel: next, href: next},  
+ *       2 : {rel: prev, href: prev}
  *      ] 
  * en donde self hace referencia a la URL visitada actualmente, 
  * next a la página siguiente y prev a la página anterior.
