@@ -18,10 +18,16 @@ controller.getLibroPorId = function getLibroPorId(req, res){
     rl = new RepositorioLibros();
     rl.getPorId(id, function(error, libro){
         if (!libro) {
-            res.writeHead(404, {'Content-Type': 'application/json; charset=UTF-8'});
-            res.write(JSON.stringify({"msg":"Libro no encontrado "}));
-            res.end();
-            return;
+            if(error.sqlMessage){
+                console.error(error.sqlMessage);
+                res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
+                res.write(JSON.stringify({"msg":"Error de conexión con la base de datos"}));
+                res.end();
+            }else{
+                res.writeHead(404, {'Content-Type': 'application/json; charset=UTF-8'});
+                res.write(JSON.stringify({"msg":"Libro no encontrado"}));
+                res.end();
+            }
         }else{
             res.writeHead(200, {'Content-Type': 'application/json; charset=UTF-8'});
             res.write(JSON.stringify({"data":libro}));
@@ -46,11 +52,19 @@ controller.getLibros = function getLibros(req, res){
     rl = new RepositorioLibros();
     
     rl.buscar(config, function(error, libros){
+
+        if(error){
+            console.error(error.sqlMessage);
+            res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
+            res.write(JSON.stringify({"msg":"Error de conexión con la base de datos"}));
+            res.end();
+            return;
+        }
+
         if (libros.length == 0) {
             res.writeHead(404, {'Content-Type': 'application/json; charset=UTF-8'});
             res.write(JSON.stringify({"msg":"Ningún libro encontrado "}));
             res.end();
-            return;
         }else{
             res.writeHead(200, {'Content-Type': 'application/json; charset=UTF-8'});
             libros.forEach(function(libro){
@@ -59,8 +73,8 @@ controller.getLibros = function getLibros(req, res){
                     rel: "libros",
                     type: "GET"
                 }
-                delete libro.descripcion;
-                delete libro.url;
+                delete libro.descripcion; //el API de búsqueda de libros no incluye descripción
+                delete libro.url; //ni URL, así que eliminamos estas propiedades del objeto
             });
             paginador = new Paginador(req)
             rpta = {"data":
@@ -93,9 +107,11 @@ controller.addLibro = function addLibro(req, res){
         nl = rl.crearLibro(body.data);
         if(nl){
             nl.insertar(function(mErr, result){
+                
                 if (mErr){
-                    res.writeHead(400, {'Content-Type': 'application/json; charset=UTF-8'});
-                    res.write(JSON.stringify({"msg":"Error al insertar en la base de datos: "+mErr}));
+                    console.error(mErr.sqlMessage);
+                    res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
+                    res.write(JSON.stringify({"msg":"Error de conexión con la base de datos"}));
                     res.end();
                 }else{
                     res.writeHead(200, {'Content-Type': 'application/json; charset=UTF-8'});
@@ -130,16 +146,31 @@ controller.updateLibro = function updateLibro(req, res){
         rl = new RepositorioLibros();
         rl.getPorId(id, function(error, libro){
             if (!libro) {
-                res.writeHead(404, {'Content-Type': 'application/json; charset=UTF-8'});
-                res.write(JSON.stringify({"msg":"Libro no encontrado "}));
-                res.end();
-                return;
+                if(error && error.sqlMessage){
+                    console.error(error.sqlMessage);
+                    res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
+                    res.write(JSON.stringify({"msg":"Error de conexión con la base de datos"}));
+                    res.end();
+                }else{
+                    res.writeHead(404, {'Content-Type': 'application/json; charset=UTF-8'});
+                    res.write(JSON.stringify({"msg":"Libro no encontrado "}));
+                    res.end();
+                }
             }else{
                 libro.actualizar(body.data, function(mErr, result){
+
                     if (mErr){
-                        res.writeHead(400, {'Content-Type': 'application/json; charset=UTF-8'});
-                        res.write(JSON.stringify({"msg":"Error al actualizar en la base de datos: "+mErr}));
-                        res.end();
+                        if(mErr.sqlMessage){
+                            console.error(mErr.sqlMessage);
+                            res.writeHead(500, {'Content-Type': 'application/json; charset=UTF-8'});
+                            res.write(JSON.stringify({"msg":"Error de conexión con la base de datos"}));
+                            res.end();
+                        }else{
+                            //error producido por parámetros incorrectos
+                            res.writeHead(400, {'Content-Type': 'application/json; charset=UTF-8'});
+                            res.write(JSON.stringify({"msg":"Parámetros incorrectos: "+mErr}));
+                            res.end();
+                        }
                     }else{
                         res.writeHead(200, {'Content-Type': 'application/json; charset=UTF-8'});
                         res.write(JSON.stringify({"data":libro}));

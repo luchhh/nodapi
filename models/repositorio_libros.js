@@ -1,5 +1,6 @@
-const mysql = require("mysql2");
+const db = require('../db');
 const moment = require('moment');
+const pool = db.pool(global.gConfig.db.url);
 
 //nombre de la tabla en BD
 var _tabla = "libro";
@@ -19,37 +20,36 @@ var repositorioLibros = function() {
  */
 repositorioLibros.prototype.getPorId = function(id, callback){
     id = id.trim();
-    const con = mysql.createConnection({
-        host: global.gConfig.db.host,
-        user: global.gConfig.db.usuario,
-        password: global.gConfig.db.password,
-        database: global.gConfig.db.nombre,
-    });
 
     var sql = "SELECT * FROM "+_tabla+" WHERE id = ?";
 
-    rpta = con.execute(sql, [id], (err, results, fields) => {
-            if(results.length==0){
-                callback("Libro no encontrado "+err, null);
+    pool.query(sql, [id], (err, results, fields) => {
+
+        if(err){
+            callback(err, null); return;
+        } 
+
+        if(results.length==0){
+            callback("Libro no encontrado", null);
+        }else{
+            //Creamos un objeto config con los resultados
+            //obtenidos de la base de datos y lo pasamos
+            //a la factoría de libros
+            var config = {};
+            config.nombre = results[0].name;
+            config.descripcion = results[0].description;
+            config.url = results[0].url;
+            config.creada = results[0].created;
+            config.modificada = results[0].modified;
+            config.id = id;
+            var nl=this.crearLibro(config);
+            if(nl){
+                callback(null, nl);
             }else{
-                //Creamos un objeto config con los resultados
-                //obtenidos de la base de datos y lo pasamos
-                //a la factoría de libros
-                var config = {};
-                config.nombre = results[0].name;
-                config.descripcion = results[0].description;
-                config.url = results[0].url;
-                config.creada = results[0].created;
-                config.modificada = results[0].modified;
-                config.id = id;
-                var nl=this.crearLibro(config);
-                if(nl){
-                    callback(null, nl);
-                }else{
-                    callback(getUltimoError(), null);
-                }
+                callback(this.getUltimoError(), null);
             }
-        });
+        }
+    });
 }
 
 /** 
@@ -68,13 +68,6 @@ repositorioLibros.prototype.getPorId = function(id, callback){
  * si ningún libro coincide
 */
 repositorioLibros.prototype.buscar = function(config, callback){
-    
-    const con = mysql.createConnection({
-        host: global.gConfig.db.host,
-        user: global.gConfig.db.usuario,
-        password: global.gConfig.db.password,
-        database: global.gConfig.db.nombre,
-    });
 
     //construimos la consulta para buscar en base de datos según parámetros
     var sql = "SELECT id, name, description, url FROM "+_tabla+" WHERE 1";
@@ -125,32 +118,36 @@ repositorioLibros.prototype.buscar = function(config, callback){
     
     //array de libros vacío y ejecución de consulta
     var libros = [];
-    rpta = con.execute(sql, params,
-        (err, results, fields) => {
-            if(results.length==0){
-                callback("Ningún libro encontrado "+err, libros);
-            }else{
-                results.forEach(
-                    (fila) => {
-                        var config = {};
-                        config.nombre = fila.name;
-                        config.descripcion = fila.description;
-                        config.url = fila.url;
-                        config.creada = fila.created;
-                        config.modificada = fila.modified;
-                        config.id = fila.id;
-                        var nl=this.crearLibro(config);
+    pool.query(sql, params, (err, results, fields) => {
+        
+        if(err){
+            callback(err, null); return;
+        }
+
+        if(results.length==0){
+            callback("Ningún libro encontrado "+err, libros);
+        }else{
+            results.forEach(
+                (fila) => {
+                    var config = {};
+                    config.nombre = fila.name;
+                    config.descripcion = fila.description;
+                    config.url = fila.url;
+                    config.creada = fila.created;
+                    config.modificada = fila.modified;
+                    config.id = fila.id;
+                    var nl=this.crearLibro(config);
                         
-                        if(nl){
-                            libros.push(nl);
-                        }else{
-                            //fallo silencioso
-                        }
+                    if(nl){
+                        libros.push(nl);
+                    }else{
+                        //fallo silencioso, datos inconsistentes en base de datos
                     }
-                );
-                callback(null, libros);
-            }
-        });
+                }
+            );
+            callback(null, libros);
+        }
+    });
 }
 
 
@@ -177,9 +174,9 @@ repositorioLibros.prototype.crearLibro = function(config){
         libro.id = parseInt(libro.id);
         if(!Number.isInteger(libro.id)) error = "ID debe ser entero";
     }
-    if(!libro.nombre || libro.nombre.trim().length == 0) error = "Nombre inválido";
-    if(!libro.descripcion || libro.descripcion.trim().length == 0) error = "Descripción inválida";
-    if(!libro.url || libro.url.trim().length == 0) error = "URL inválida";
+    if(!libro.hasOwnProperty("nombre") || libro.nombre.trim().length == 0) error = "Nombre inválido";
+    if(!libro.hasOwnProperty("descripcion") || libro.descripcion.trim().length == 0) error = "Descripción inválida";
+    if(!libro.hasOwnProperty("url") || libro.url.trim().length == 0) error = "URL inválida";
 
     //si hubo algún error se actualiza el último error del repositorio
     if(error){
@@ -195,23 +192,18 @@ repositorioLibros.prototype.crearLibro = function(config){
      * es la misma que el callback de execute de mysql
      */
     libro.insertar = function(callback){
+        
         //this hace referencia al libro
-        const con = mysql.createConnection({
-            host: global.gConfig.db.host,
-            user: global.gConfig.db.usuario,
-            password: global.gConfig.db.password,
-            database: global.gConfig.db.nombre,
-        });
         var ahora = moment().format("YYYY-MM-DD HH:mm:ss");
         this.creada = ahora;
         var sql = "INSERT INTO "+_tabla+" (id, name, description, url, created) VALUES (NULL,?,?,?,?)";
         
-        rpta = con.execute(
+        pool.query(
             sql, 
             [this.nombre, this.descripcion, this.url, this.creada], (error, resultado) => {
                 //antes de llamar al callback asignamos a este libro
                 //el nuevo ID
-                if(resultado.insertId) this.id = resultado.insertId+"";
+                if(resultado && resultado.insertId) this.id = resultado.insertId+"";
                 callback(error, resultado);
             }
         );
@@ -227,16 +219,11 @@ repositorioLibros.prototype.crearLibro = function(config){
      * los parámetros es incorrecto error tendrá el mensaje
      */
     libro.actualizar = function(nConfig, callback){
-        const con = mysql.createConnection({
-            host: global.gConfig.db.host,
-            user: global.gConfig.db.usuario,
-            password: global.gConfig.db.password,
-            database: global.gConfig.db.nombre,
-        });
+
         //validamos que los parámetros pasados tengan un valor válido
-        if(nConfig.nombre && nConfig.nombre.trim().length == 0) error = "Nombre inválido";
-        if(nConfig.descripcion && nConfig.descripcion.trim().length == 0) error = "Descripción inválida";
-        if(nConfig.url && nConfig.url.trim().length == 0) error = "URL inválida";
+        if(nConfig.hasOwnProperty("nombre") && nConfig.nombre.trim().length == 0) error = "Nombre inválido";
+        if(nConfig.hasOwnProperty("descripcion") && nConfig.descripcion.trim().length == 0) error = "Descripción inválida";
+        if(nConfig.hasOwnProperty("url") && nConfig.url.trim().length == 0) error = "URL inválida";
 
         if(error){
             callback(error, null);
@@ -249,7 +236,7 @@ repositorioLibros.prototype.crearLibro = function(config){
         self.modificada = ahora;
         var sql = "UPDATE "+_tabla+" SET name=?, description=?, url=?, modified=? WHERE id = ?";
         
-        rpta = con.execute(sql, [self.nombre, self.descripcion, self.url, self.modificada, self.id], callback);
+        pool.query(sql, [self.nombre, self.descripcion, self.url, self.modificada, self.id], callback);
     }
 
     libro.eliminar = function(callback){

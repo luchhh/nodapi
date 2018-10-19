@@ -1,7 +1,6 @@
+global.gConfig = require('./config.json');
 var http = require('http');
 var ruteador = require('./router');
-const config = require('./config.json');
-global.gConfig = config;
 
 // Creamos el servidor
 var server = http.createServer(function (req, res) {

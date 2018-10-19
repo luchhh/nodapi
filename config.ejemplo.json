@@ -3,9 +3,6 @@
         "port": 8000
     },
     "db": {
-        "nombre": "phpapi",
-        "usuario": "root",
-        "password": "",
-        "host": "localhost"
+        "url": "mysql://root:password@localhost/phpapi"
     }
 }
